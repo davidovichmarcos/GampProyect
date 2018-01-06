@@ -1,0 +1,25 @@
+{
+  "name": "gameproject",
+  "version": "0.0.1",
+  "description": "a great game!",
+  "main": "Main.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "testgame"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidovichmarcos/gameProyect.git"
+  },
+  "author": "M Davidovich",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/davidovichmarcos/gameProyect/issues"
+  },
+  "homepage": "https://github.com/davidovichmarcos/gameProyect#readme",
+  "dependencies": {
+    "planck-js": "^0.1.37"
+  }
+}
