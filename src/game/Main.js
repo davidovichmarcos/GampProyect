@@ -16,10 +16,10 @@ class Main extends Component{
   }
   render() {
 
-    return (<div id = 'game-content'></div>);
+    return (<div id = 'game-content'><canvas id='surface'></canvas></div>);
   }
   componentDidMount() {
-    this.world = new WorldGame();
+    this.world = new WorldGame(document.getElementById('surface'));
   }
 }
 

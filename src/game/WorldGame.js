@@ -1,6 +1,8 @@
-import Rectangle from './entity/Rectangle.js';
+import Player from './entity/Player.js';
+import Camera from './Camera.js';
 import Matter from 'matter-js';
 
+const SCALE = 100;
 let pause = true;
 let lastPress = null;
 let pressingKeys =[];
@@ -11,8 +13,10 @@ var Engine = Matter.Engine,
             Mouse = Matter.Mouse,
             World = Matter.World,
             Body = Matter.Body,
+            Bounds = Matter.Bounds,
             Events = Matter.Events,
             Bodies = Matter.Bodies;
+
 
 const movement = 4;
 const keys = {
@@ -25,17 +29,24 @@ const keys = {
 
 export default class WorldGame {
 
-  constructor() {
-    console.log('asdsds');
-    this.WIDHT = 800;
-    this.HEIGHT = 600;
+  constructor(surface) {
+    this.canvas = surface;
+    this.canvas.width = window.innerWidth-4;
+    this.canvas.height = window.innerHeight-4;
+    this.WIDHT = this.canvas.width;
+    this.HEIGHT = this.canvas.height;
     this.player = null;
-    this.food = null;
+    this.cam = null;
     this.loadListeners();
     this.loadObjects();
     this.init();
   }
+  loadObjects() {
+    // Create Objects
+     this.player = new Player(Bodies.rectangle(400, 300, 60, 60));
+     this.cam = new Camera(this.WIDHT,this.HEIGHT);
 
+  }
   loadListeners() {
     document.addEventListener('keydown',(evt) => {
       lastPress = evt.keyCode;
@@ -48,22 +59,18 @@ export default class WorldGame {
     }, false);
   }
 
-  loadObjects() {
-    // Create Objects
 
-     this.player = new Rectangle(40,40,50,50);
-     this.food = new Rectangle(40, 40,10,10);
-
-  }
   init() {
 
     // create engine
   var engine = Engine.create(),
       world = engine.world;
 
+      let self = this;
+
   // create renderer
   var render = Render.create({
-      element: document.body,
+      canvas: self.canvas,
       engine: engine,
       options: {
           width: this.WIDHT,
@@ -77,52 +84,54 @@ export default class WorldGame {
   // create runner
   var runner = Runner.create();
   Runner.run(runner, engine);
- var  player1 = Bodies.rectangle(400, 100, 60, 60);
 
 
   // add bodies
   World.add(world,[
       // falling blocks
-      player1,
+      this.player.getBody(),
       // walls
-      Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
-      Bodies.rectangle(400, 600, 800, 50, { isStatic: true }),
-      Bodies.rectangle(800, 300, 50, 600, { isStatic: true }),
-      Bodies.rectangle(0, 300, 50, 600, { isStatic: true })
+      Bodies.rectangle(4*SCALE, 0, 8*SCALE, 50, { isStatic: true }),
+      Bodies.rectangle(4*SCALE, 6*SCALE, 8*SCALE, 50, { isStatic: true }),
+      Bodies.rectangle(1300, 6*SCALE, 8*SCALE, 50, { isStatic: true })
   ]);
-  Events.on(engine, 'beforeUpdate', function(event) {
-    //Player Movement
-  if(pressingKeys[keys.KEY_RIGHT]){
-    Body.setVelocity(player1, { x: movement*1.5, y: 0 });
-  }
-  if(pressingKeys[keys.KEY_UP]){
-    console.log('up');
-    Body.setVelocity(player1, { x: 0 , y: -movement*1.5 });
-  }
-  if(pressingKeys[keys.KEY_LEFT]){
-    console.log(85252);
-    Body.setVelocity(player1, { x: -movement*1.5, y: 0 });
-  }
-  if(pressingKeys[keys.KEY_DOWN]){
-    console.log(85252);
-    Body.setVelocity(player1, { x: 0, y: movement*1.5 });
-  }
-  if(pressingKeys[keys.KEY_DOWN]&&pressingKeys[keys.KEY_LEFT]){
-    console.log(85252);
-    Body.setVelocity(player1, { x: -movement, y: movement });
-  }
-  if(pressingKeys[keys.KEY_DOWN]&&pressingKeys[keys.KEY_RIGHT]){
-    console.log(85252);
-    Body.setVelocity(player1, { x: movement, y: movement });
-  }
-  if(pressingKeys[keys.KEY_UP]&&pressingKeys[keys.KEY_LEFT]){
-    console.log(85252);
-    Body.setVelocity(player1, { x: -movement, y: -movement });
-  }
-  if(pressingKeys[keys.KEY_UP]&&pressingKeys[keys.KEY_RIGHT]){
-    console.log(85252);
-    Body.setVelocity(player1, { x: movement, y: -movement });
-  }
+
+  Events.on(engine, 'beforeUpdate', event => {
+
+  //  this.cam.focus(this.player.getPositionX, this.player.getPositionY);
+    let translate = {
+              x: 0 ,
+              y: 0
+            };
+          //  console.log(this.player.getBody());
+            translate.x = translate.x + 10;
+            translate.y = translate.y + 10;// this.player.getBody().position.x;
+    Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
+      //Player Movement
+    if(pressingKeys[keys.KEY_RIGHT]){
+      Body.setVelocity(this.player.getBody(), { x: movement*1.5, y: 0 });
+    }
+    if(pressingKeys[keys.KEY_UP]){
+      Body.setVelocity(this.player.getBody(), { x: 0 , y: -movement*1.5 });
+    }
+    if(pressingKeys[keys.KEY_LEFT]){
+      Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
+    }
+    if(pressingKeys[keys.KEY_DOWN]){
+      Body.setVelocity(this.player.getBody(), { x: 0, y: movement*1.5 });
+    }
+    if(pressingKeys[keys.KEY_DOWN]&&pressingKeys[keys.KEY_LEFT]){
+      Body.setVelocity(this.player.getBody(), { x: -movement, y: movement });
+    }
+    if(pressingKeys[keys.KEY_DOWN]&&pressingKeys[keys.KEY_RIGHT]){
+      Body.setVelocity(this.player.getBody(), { x: movement, y: movement });
+    }
+    if(pressingKeys[keys.KEY_UP]&&pressingKeys[keys.KEY_LEFT]){
+      Body.setVelocity(this.player.getBody(), { x: -movement, y: -movement });
+    }
+    if(pressingKeys[keys.KEY_UP]&&pressingKeys[keys.KEY_RIGHT]){
+      Body.setVelocity(this.player.getBody(), { x: movement, y: -movement });
+    }
 });
   // add mouse control
   var mouse = Mouse.create(render.canvas),
