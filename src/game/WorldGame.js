@@ -18,14 +18,17 @@ var Engine = Matter.Engine,
             Bodies = Matter.Bodies;
 
 
-const movement = 4;
+
 const keys = {
   KEY_ENTER : 13,
   KEY_LEFT : 37,
   KEY_UP  : 38,
   KEY_RIGHT : 39,
-  KEY_DOWN : 40
+  KEY_DOWN : 40,
+  KEY_SPACE : 32
 };
+
+let izq = false;
 
 export default class WorldGame {
 
@@ -54,6 +57,21 @@ export default class WorldGame {
       pressingKeys[evt.keyCode] = true;
     }, false);
 
+    document.addEventListener('touchdown',(evt) => {
+      if(evt.clientX > this.WIDHT) {
+        pressingKeys[keys.KEY_LEFT] = true;
+      } else{
+        pressingKeys[keys.KEY_RIGHT] = true;
+      }
+    }, false);
+
+    document.addEventListener('touchup',(evt) => {
+      if(evt.clientX > this.WIDHT) {
+        pressingKeys[keys.KEY_LEFT] = false;
+      } else{
+        pressingKeys[keys.KEY_RIGHT] = false;
+      }
+    }, false);
     document.addEventListener('keyup',(evt) => {
       pressingKeys[evt.keyCode] = false;
     }, false);
@@ -98,40 +116,46 @@ export default class WorldGame {
 
   Events.on(engine, 'beforeUpdate', event => {
 
-  //  this.cam.focus(this.player.getPositionX, this.player.getPositionY);
-    let translate = {
-              x: 0 ,
-              y: 0
-            };
-          //  console.log(this.player.getBody());
-            translate.x = translate.x + 10;
-            translate.y = translate.y + 10;// this.player.getBody().position.x;
+    // Camera Following the Player.
     Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
       //Player Movement
-    if(pressingKeys[keys.KEY_RIGHT]){
-      Body.setVelocity(this.player.getBody(), { x: movement*1.5, y: 0 });
+
+    if(pressingKeys[keys.KEY_SPACE]){
+      this.player.jump();
     }
-    if(pressingKeys[keys.KEY_UP]){
-      Body.setVelocity(this.player.getBody(), { x: 0 , y: -movement*1.5 });
+    if(pressingKeys[keys.KEY_RIGHT]){
+      this.player.move({ x:1.5, y: 0 });
+      //Body.setVelocity(this.player.getBody(), );
     }
     if(pressingKeys[keys.KEY_LEFT]){
-      Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
+      this.player.move({ x: -1.5, y: 0 });
+      //Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
     }
     if(pressingKeys[keys.KEY_DOWN]){
-      Body.setVelocity(this.player.getBody(), { x: 0, y: movement*1.5 });
+      this.player.move({ x: 0, y: 1.5 });
     }
     if(pressingKeys[keys.KEY_DOWN]&&pressingKeys[keys.KEY_LEFT]){
-      Body.setVelocity(this.player.getBody(), { x: -movement, y: movement });
+      this.player.move({ x: -1, y: 1 });
     }
     if(pressingKeys[keys.KEY_DOWN]&&pressingKeys[keys.KEY_RIGHT]){
-      Body.setVelocity(this.player.getBody(), { x: movement, y: movement });
+      this.player.move({ x: 1, y: 1 });
+
     }
-    if(pressingKeys[keys.KEY_UP]&&pressingKeys[keys.KEY_LEFT]){
-      Body.setVelocity(this.player.getBody(), { x: -movement, y: -movement });
+    if(pressingKeys[keys.KEY_SPACE]&&pressingKeys[keys.KEY_LEFT]){
+      this.player.jump();
+      this.player.move({ x: -1, y: -1 });
+
     }
-    if(pressingKeys[keys.KEY_UP]&&pressingKeys[keys.KEY_RIGHT]){
-      Body.setVelocity(this.player.getBody(), { x: movement, y: -movement });
+    if(pressingKeys[keys.KEY_SPACE]&&pressingKeys[keys.KEY_RIGHT]){
+      this.player.jump();
+      this.player.move({ x: 1, y: -1 });
     }
+});
+Events.on(engine,'collisionActive',event => {
+  this.player.onFloor = true;
+});
+Events.on(engine,'collisionEnd',event => {
+  this.player.onFloor = false;
 });
   // add mouse control
   var mouse = Mouse.create(render.canvas),
