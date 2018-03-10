@@ -1,0 +1,20 @@
+{
+  "name": "GampProyect",
+  "homepage": "https://github.com/davidovichmarcos/GampProyect",
+  "authors": [
+    "davidovichmarcos <davidovich.marcos@gmail.com>"
+  ],
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "Matter": "matter-js#^0.12.0"
+  }
+}
