@@ -34,7 +34,6 @@ export default class Player{
     jump() {
 
        if(this.onFloor == true){
-         console.log(this.body);
          Body.setVelocity(this.body,{x:0 , y:-7})
        }
     }

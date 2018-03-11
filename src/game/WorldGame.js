@@ -1,6 +1,6 @@
 import Player from './entity/Player.js';
-import Camera from './Camera.js';
 import Matter from 'matter-js';
+import TerrainGenerator from './entity/TerrainGenerator';
 
 const SCALE = 100;
 let pause = true;
@@ -40,6 +40,7 @@ export default class WorldGame {
     this.HEIGHT = this.canvas.height;
     this.player = null;
     this.cam = null;
+    this.terrain = null;
     this.loadListeners();
     this.loadObjects();
     this.init();
@@ -47,13 +48,12 @@ export default class WorldGame {
   loadObjects() {
     // Create Objects
      this.player = new Player(Bodies.rectangle(400, 300, 60, 60));
-     this.cam = new Camera(this.WIDHT,this.HEIGHT);
-
+     this.terrain = new TerrainGenerator(this.WIDHT, this.HEIGHT, Bodies);
   }
+
   loadListeners() {
     document.addEventListener('keydown',(evt) => {
       lastPress = evt.keyCode;
-      console.log(evt.keyCode);
       pressingKeys[evt.keyCode] = true;
     }, false);
 
@@ -93,7 +93,8 @@ export default class WorldGame {
       options: {
           width: this.WIDHT,
           height: this.HEIGHT,
-          showVelocity: true
+          showVelocity: true,
+          wireframes: false
       }
   });
 
@@ -108,12 +109,12 @@ export default class WorldGame {
   World.add(world,[
       // falling blocks
       this.player.getBody(),
-      // walls
-      Bodies.rectangle(4*SCALE, 0, 8*SCALE, 50, { isStatic: true }),
-      Bodies.rectangle(4*SCALE, 6*SCALE, 8*SCALE, 50, { isStatic: true }),
-      Bodies.rectangle(1300, 6*SCALE, 8*SCALE, 50, { isStatic: true })
-  ]);
+      // floor
+      this.terrain.getTerrain()
 
+  ]);
+  World.add(world, this.terrain.getTerrain());
+console.log(this.terrain.getTerrain());
   Events.on(engine, 'beforeUpdate', event => {
 
     // Camera Following the Player.
