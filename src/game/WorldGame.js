@@ -80,106 +80,100 @@ export default class WorldGame {
 
   init() {
 
-    // create engine
-  var engine = Engine.create(),
-      world = engine.world;
+      // create engine
+    var engine = Engine.create(),
+        world = engine.world;
 
-      let self = this;
+        let self = this;
 
-  // create renderer
-  var render = Render.create({
-      canvas: self.canvas,
-      engine: engine,
-      options: {
-          width: this.WIDHT,
-          height: this.HEIGHT,
-          showVelocity: true,
-          wireframes: false
-      }
-  });
+    // create renderer
+    var render = Render.create({
+        canvas: self.canvas,
+        engine: engine,
+        options: {
+            width: this.WIDHT,
+            height: this.HEIGHT,
+            showVelocity: true,
+            wireframes: false
+        }
+    });
 
-  Render.run(render);
+    Render.run(render);
 
-  // create runner
-  var runner = Runner.create();
-  Runner.run(runner, engine);
+    // create runner
+    var runner = Runner.create();
+    Runner.run(runner, engine);
 
+    let timing = () => {
+      this.cycle++; //tracks game cycles
+      //delta is used to adjust forces on game slow down;
+      this.delta = (engine.timing.timestamp - this.lastTimeStamp) / 16.666666666666;
+      this.lastTimeStamp = engine.timing.timestamp; //track last engine timestamp
+    }
 
-  // add bodies
-  World.add(world,[
-      // falling blocks
-      this.player.getBody(),
-      // floor
-      this.terrain.getTerrain()
+    // add bodies
+    World.add(world,[
+        // falling blocks
+        this.player.getBody(),
+        // floor
+        this.terrain.getTerrain()
 
-  ]);
-  World.add(world, this.terrain.getTerrain());
-console.log(this.terrain.getTerrain());
-  Events.on(engine, 'beforeUpdate', event => {
+    ]);
+    World.add(world, this.terrain.getTerrain());
 
-    // Camera Following the Player.
-    Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
+    let moving, jumping = false;
+
+    Events.on(engine, 'beforeUpdate', event => {
+      // Camera Following the Player.
+      Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
+
+      this.player.update(this.delta);
+
       //Player Movement
+      if(pressingKeys[keys.KEY_SPACE]){
+        this.player.jump();
+      } else if(pressingKeys[keys.KEY_RIGHT]){
+        this.player.moveRight();
+        //Body.setVelocity(this.player.getBody(), );
+      } else if(pressingKeys[keys.KEY_LEFT]){
+        this.player.moveLeft();
+        //Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
+      }
 
-    if(pressingKeys[keys.KEY_SPACE]){
-      this.player.jump();
-    }
-    if(pressingKeys[keys.KEY_RIGHT]){
-      this.player.move({ x:1.5, y: 0 });
-      //Body.setVelocity(this.player.getBody(), );
-    }
-    if(pressingKeys[keys.KEY_LEFT]){
-      this.player.move({ x: -1.5, y: 0 });
-      //Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
-    }
-    if(pressingKeys[keys.KEY_DOWN]){
-      this.player.move({ x: 0, y: 1.5 });
-    }
-    if(pressingKeys[keys.KEY_DOWN]&&pressingKeys[keys.KEY_LEFT]){
-      this.player.move({ x: -1, y: 1 });
-    }
-    if(pressingKeys[keys.KEY_DOWN]&&pressingKeys[keys.KEY_RIGHT]){
-      this.player.move({ x: 1, y: 1 });
+      timing();
 
-    }
-    if(pressingKeys[keys.KEY_SPACE]&&pressingKeys[keys.KEY_LEFT]){
-      this.player.jump();
-      this.player.move({ x: -1, y: -1 });
+    });
 
-    }
-    if(pressingKeys[keys.KEY_SPACE]&&pressingKeys[keys.KEY_RIGHT]){
-      this.player.jump();
-      this.player.move({ x: 1, y: -1 });
-    }
-});
-Events.on(engine,'collisionActive',event => {
-  this.player.onFloor = true;
-});
-Events.on(engine,'collisionEnd',event => {
-  this.player.onFloor = false;
-});
-  // add mouse control
-  var mouse = Mouse.create(render.canvas),
-      mouseConstraint = MouseConstraint.create(engine, {
-          mouse: mouse,
-          constraint: {
-              stiffness: 0.2,
-              render: {
-                  visible: false
-              }
-          }
-      });
+    Events.on(engine,'collisionActive',event => {
+      this.player.onFloor = true;
+    });
+    Events.on(engine,'collisionEnd',event => {
+      this.player.onFloor = false;
+    });
 
-  World.add(world, mouseConstraint);
+    // add mouse control
+    var mouse = Mouse.create(render.canvas),
+        mouseConstraint = MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                stiffness: 0.2,
+                render: {
+                    visible: false
+                }
+            }
+        });
 
-  // keep the mouse in sync with rendering
-  render.mouse = mouse;
+    World.add(world, mouseConstraint);
 
-  // fit the render viewport to the scene
-  Render.lookAt(render, {
-      min: { x: 0, y: 0 },
-      max: { x: 800, y: 600 }
-  });
+    // keep the mouse in sync with rendering
+    render.mouse = mouse;
+
+    // fit the render viewport to the scene
+    Render.lookAt(render, {
+        min: { x: 0, y: 0 },
+        max: { x: 800, y: 600 }
+    });
+
   }
 
   getPlayer() {
@@ -189,5 +183,6 @@ Events.on(engine,'collisionEnd',event => {
   random(max) {
    return Math.floor(Math.random() * max);
   }
+
 
 }

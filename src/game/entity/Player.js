@@ -7,11 +7,18 @@ export default class Player{
       this.x = body.position.x;
       this.y = body.position.y;
       this.onFloor = false;
+      this.delta = 0;
       this.movement = 4;
       this.currentJumpTime = null;
-      this.lastJumpTime = null;
-      this.width = ( body.width == null) ? 0 : body.width;
+      this.lastJumpTime = null
       this.height = (body.height == null) ? body.width :body.height;
+      this.width = ( body.width == null) ? 0 : body.width;
+
+      //body properties
+      this.mass = 5;
+      this.Fx = 0.004 * this.mass; //run Force on ground
+      this.Fy = 0.04 * this.mass; //jump
+      this.force = 0;
     }
 
     setPosition(body) {
@@ -25,21 +32,27 @@ export default class Player{
     getPositionY() {
       return  this.y;
     }
-    update (body) {
-      this.body;
+
+    update(delta) {
+      this.delta = delta;
     }
+
     getBody() {
       return this.body;
     }
-    jump() {
 
-       if(this.onFloor == true){
-         Body.setVelocity(this.body,{x:0 , y:-7})
-       }
+    jump() {
+      if(this.onFloor == true){
+        this.body.force.y = -this.Fy / this.delta;
+      }
     }
-    move(direction) {
-      direction.y = direction.y *this.movement;
-      direction.x = direction.x *this.movement;
-      Body.setVelocity(this.body, direction);
+
+    moveLeft() {
+      if(this.onFloor == true) this.body.force.x = -this.Fx / this.delta;
     }
+
+    moveRight() {
+      if(this.onFloor == true) this.body.force.x = this.Fx / this.delta;
+    }
+
 }
