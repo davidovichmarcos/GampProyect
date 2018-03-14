@@ -4,8 +4,10 @@ import TerrainGenerator from './entity/TerrainGenerator';
 
 const SCALE = 100;
 let pause = true;
+let makingMode = false;
 let lastPress = null;
 let pressingKeys =[];
+let touch  = { value : false, position : {x : 0,y : 0}};
 var Engine = Matter.Engine,
             Render = Matter.Render,
             Runner = Matter.Runner,
@@ -15,9 +17,9 @@ var Engine = Matter.Engine,
             Body = Matter.Body,
             Bounds = Matter.Bounds,
             Events = Matter.Events,
-            Bodies = Matter.Bodies;
-
-
+            Bodies = Matter.Bodies,
+            Vertices = Matter.Vertices,
+            Vector = Matter.Vector;
 
 const keys = {
   KEY_ENTER : 13,
@@ -25,7 +27,8 @@ const keys = {
   KEY_UP  : 38,
   KEY_RIGHT : 39,
   KEY_DOWN : 40,
-  KEY_SPACE : 32
+  KEY_SPACE : 32,
+  M : 77 //making mode
 };
 
 let izq = false;
@@ -47,17 +50,32 @@ export default class WorldGame {
   }
   loadObjects() {
     // Create Objects
-     this.player = new Player(Bodies.rectangle(400, 300, 60, 60));
-     this.terrain = new TerrainGenerator(this.WIDHT, this.HEIGHT, Bodies);
+     this.player = new Player(Bodies.rectangle(400, 300, 25, 25), Matter);
+     this.terrain = new TerrainGenerator(this.WIDHT, this.HEIGHT, Matter);
   }
 
   loadListeners() {
     document.addEventListener('keydown',(evt) => {
+      //console.log(evt.keyCode);
       lastPress = evt.keyCode;
       pressingKeys[evt.keyCode] = true;
+      if(pressingKeys[keys.M]){
+        if(makingMode) {
+          makingMode = false;
+        } else{
+          makingMode = true;
+        }
+      }
+    }, false);
+
+    document.addEventListener('keyup',(evt) => {
+      pressingKeys[evt.keyCode] = false;
     }, false);
 
     document.addEventListener('touchdown',(evt) => {
+      touch.value = true;
+      touch.position = { x : evt.clientX, y : evt.clientY };
+
       if(evt.clientX > this.WIDHT) {
         pressingKeys[keys.KEY_LEFT] = true;
       } else{
@@ -66,26 +84,34 @@ export default class WorldGame {
     }, false);
 
     document.addEventListener('touchup',(evt) => {
+      touch.value = false;
       if(evt.clientX > this.WIDHT) {
         pressingKeys[keys.KEY_LEFT] = false;
       } else{
         pressingKeys[keys.KEY_RIGHT] = false;
       }
     }, false);
-    document.addEventListener('keyup',(evt) => {
-      pressingKeys[evt.keyCode] = false;
+
+    document.addEventListener('mousedown',(evt) => {
+      touch.value = true;
+    }, false);
+
+    document.addEventListener('mouseup',(evt) => {
+      touch.value = false;
+    }, false);
+
+    document.addEventListener('mousemove',(evt) => {
+      touch.position = { x : evt.clientX, y : evt.clientY };
     }, false);
   }
 
 
   init() {
-
-      // create engine
+    // create engine
     var engine = Engine.create(),
         world = engine.world;
 
-        let self = this;
-
+    let self = this;
     // create renderer
     var render = Render.create({
         canvas: self.canvas,
@@ -93,13 +119,12 @@ export default class WorldGame {
         options: {
             width: this.WIDHT,
             height: this.HEIGHT,
-            showVelocity: true,
+            //showVelocity: true, this flag shows a blue line highlighting velocity
             wireframes: false
         }
     });
 
     Render.run(render);
-
     // create runner
     var runner = Runner.create();
     Runner.run(runner, engine);
@@ -112,35 +137,44 @@ export default class WorldGame {
     }
 
     // add bodies
-    World.add(world,[
-        // falling blocks
-        this.player.getBody(),
-        // floor
-        this.terrain.getTerrain()
-
-    ]);
+    World.add(world, this.player.getBody());
     World.add(world, this.terrain.getTerrain());
-
-    let moving, jumping = false;
+    this.terrain.initMakingMode(world);
 
     Events.on(engine, 'beforeUpdate', event => {
-      // Camera Following the Player.
-      Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
+      if(!makingMode) {
+        this.terrain.validateRemaining();
+        // Camera Following the Player.
+        //Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
 
-      this.player.update(this.delta);
+        this.player.update(this.delta, world);
 
-      //Player Movement
-      if(pressingKeys[keys.KEY_SPACE]){
-        this.player.jump();
-      } else if(pressingKeys[keys.KEY_RIGHT]){
-        this.player.moveRight();
-        //Body.setVelocity(this.player.getBody(), );
-      } else if(pressingKeys[keys.KEY_LEFT]){
-        this.player.moveLeft();
-        //Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
+        //Player Movement
+        if(pressingKeys[keys.KEY_UP]){
+          this.player.jump();
+        } else if(pressingKeys[keys.KEY_RIGHT]){
+          this.player.moveRight();
+          //Body.setVelocity(this.player.getBody(), );
+        } else if(pressingKeys[keys.KEY_LEFT]){
+          this.player.moveLeft();
+          //Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
+        }
+
+        if(touch.value) {
+          this.player.shoot(world, touch.position);
+        }
+
+        timing();
+
+      } else{
+        this.makeText("MAKING MODE");
+        this.terrain.drawShadowPlatform(touch.position);
+        if(touch.value) {
+          //If click is on gets the last platform and create a new one to be move after
+          this.terrain.persistChanges();
+        }
+
       }
-
-      timing();
 
     });
 
@@ -152,7 +186,7 @@ export default class WorldGame {
     });
 
     // add mouse control
-    var mouse = Mouse.create(render.canvas),
+  /*  var mouse = Mouse.create(render.canvas),
         mouseConstraint = MouseConstraint.create(engine, {
             mouse: mouse,
             constraint: {
@@ -172,7 +206,7 @@ export default class WorldGame {
     Render.lookAt(render, {
         min: { x: 0, y: 0 },
         max: { x: 800, y: 600 }
-    });
+    });*/
 
   }
 
@@ -184,5 +218,11 @@ export default class WorldGame {
    return Math.floor(Math.random() * max);
   }
 
+  makeText(message) {
+    let context = this.canvas.getContext('2d');
+    context.font = '48px serif';
+    context.textAlign = "center";
+    context.strokeText(message, this.WIDHT /2, this.HEIGHT /2);
+  }
 
 }

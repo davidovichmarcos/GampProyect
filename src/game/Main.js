@@ -15,7 +15,6 @@ class Main extends Component{
 
   }
   render() {
-
     return (<div id = 'game-content'><canvas id='surface'></canvas></div>);
   }
   componentDidMount() {
