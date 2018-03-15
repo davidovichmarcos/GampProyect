@@ -1,10 +1,10 @@
-export default class Player {
+export default class Enemy {
 
      constructor(body, Matter) {
       this.World = Matter.World;
       this.Bodies = Matter.Bodies;
       this.body = body;
-      this.body.label = 'Player';
+      this.body.label = 'Enemy';
       this.position = body.position;
       this.onFloor = false;
       this.delta = 0;
@@ -25,16 +25,17 @@ export default class Player {
     }
 
     setPosition(body) {
-      this.position.x = body.position.x;
-      this.position.y = body.position.y;
+      this.x = body.position.x;
+      this.y = body.position.y;
     }
 
     getPosition() {
       return this.position;
     }
-    
-    update(delta, world) {
+
+    update(delta, player, world) {
       this.delta = delta;
+      this.calculateDistanceFromPlayer(player, world);
       this.bulletCycle(world);
     }
 
@@ -57,6 +58,7 @@ export default class Player {
     }
 
     shoot(world, position) {
+      console.log("ASD");
       //calculates tangente by x,y
       this.angle = Math.atan2(position.y - this.position.y, position.x - this.position.x);
       const len = this.bullets.length;
@@ -104,6 +106,11 @@ export default class Player {
       }
     }
 
-
+    calculateDistanceFromPlayer(player, world) {
+      let posX = this.position.x - player.getPosition().x;
+      let posY = this.position.y - player.getPosition().y;
+      let distance = Math.sqrt((posX * posX) + (posY * posY));
+      if(distance <= 200) return this.shoot(world, player.getPosition());
+    }
 
 }

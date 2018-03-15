@@ -1,5 +1,6 @@
-import Player from './entity/Player.js';
 import Matter from 'matter-js';
+import Player from './entity/Player';
+import Enemy from './entity/Enemy';
 import TerrainGenerator from './entity/TerrainGenerator';
 
 const SCALE = 100;
@@ -51,7 +52,9 @@ export default class WorldGame {
   loadObjects() {
     // Create Objects
      this.player = new Player(Bodies.rectangle(400, 300, 25, 25), Matter);
+     this.enemy = new Enemy(Bodies.rectangle(500, 300, 35, 35), Matter);
      this.terrain = new TerrainGenerator(this.WIDHT, this.HEIGHT, Matter);
+     console.log(this.player)
   }
 
   loadListeners() {
@@ -138,6 +141,7 @@ export default class WorldGame {
 
     // add bodies
     World.add(world, this.player.getBody());
+    World.add(world, this.enemy.getBody());
     World.add(world, this.terrain.getTerrain());
     this.terrain.initMakingMode(world);
 
@@ -148,6 +152,7 @@ export default class WorldGame {
         //Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
 
         this.player.update(this.delta, world);
+        this.enemy.update(this.delta, this.player, world);
 
         //Player Movement
         if(pressingKeys[keys.KEY_UP]){
@@ -179,10 +184,11 @@ export default class WorldGame {
     });
 
     Events.on(engine,'collisionActive',event => {
-      this.player.onFloor = true;
+      this.handleActiveCollision(event);
     });
+
     Events.on(engine,'collisionEnd',event => {
-      this.player.onFloor = false;
+      this.handleEndCollision(event);
     });
 
     // add mouse control
@@ -223,6 +229,36 @@ export default class WorldGame {
     context.font = '48px serif';
     context.textAlign = "center";
     context.strokeText(message, this.WIDHT /2, this.HEIGHT /2);
+  }
+
+  handleActiveCollision(event) {
+    let length = event.pairs.length;
+
+    for(let i = 0; i < length; i++) {
+      let pair = event.pairs[i];
+
+      if((pair.bodyA.label === 'Player' || pair.bodyB.label === 'Player')) {
+        this.player.onFloor = true;
+      } else if((pair.bodyA.label === 'Portal' || pair.bodyB.label === 'Portal')){
+        //console.log("ea");
+      }
+    //  Matter.Events.trigger(player.body, 'collision', { pair : pair });
+    }
+  }
+
+  handleEndCollision(event) {
+    let length = event.pairs.length;
+
+    for(let i = 0; i < length; i++) {
+      let pair = event.pairs[i];
+
+      if((pair.bodyA.label === 'Player' || pair.bodyB.label === 'Player')) {
+        this.player.onFloor = false;
+      } else if((pair.bodyA.label === 'Portal' || pair.bodyB.label === 'Portal')){
+
+      }
+    //  Matter.Events.trigger(player.body, 'collision', { pair : pair });
+    }
   }
 
 }

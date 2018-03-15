@@ -1,7 +1,7 @@
 export default class TerrainGenerator {
 
     constructor(WIDHT, HEIGHT, Matter){
-      this.width = WIDHT*2;
+      this.width = WIDHT;
       this.height = HEIGHT;
       this.terrain = new Array();
       this.Bodies = Matter.Bodies;
@@ -15,7 +15,8 @@ export default class TerrainGenerator {
       this.currentTime = 0;
       this.lastTime = 0;
 
-      this.defaultTerrain();
+      this.createObstacules();
+      this.createDefaultTerrain();
     }
 
     initMakingMode(world) {
@@ -84,19 +85,72 @@ export default class TerrainGenerator {
       }
     }
 
-    defaultTerrain() {
-      this.terrain.push(this.Bodies.rectangle(0, 0, this.width, 50, { isStatic: true ,
+    createObstacules() {
+      this.terrain.push(this.Bodies.rectangle(this.width /2, 25, 50, 50, {
+        render: {
+          fillStyle: '#236f8ebd',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+      this.terrain.push(this.Bodies.rectangle(this.width /2, 25, 50, 50, {
+        render: {
+          fillStyle: '#236f8ebd',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+      this.terrain.push(this.Bodies.rectangle(this.width /2, 25, 50, 50, {
+        render: {
+          fillStyle: '#236f8ebd',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+      this.terrain.push(this.Bodies.rectangle(this.width /2, 25, 50, 50, {
+        render: {
+          fillStyle: '#236f8ebd',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+    }
+
+    createDefaultTerrain() {
+      //*Aclaration* the x position of rectangle is that cause the physics engine set all objects in base to its center of mass
+      // x = center of mass = middle of rectangle
+      this.terrain.push(this.Bodies.rectangle(this.width /2, 25, this.width, 50, { isStatic: true ,
         render: {
           fillStyle: 'green',
           strokeStyle: 'green',
           lineWidth: 3
-        } }));
-      this.terrain.push(this.Bodies.rectangle(0, this.height - 150, this.width, 50, { isStatic: true ,
+      } }));
+      this.terrain.push(this.Bodies.rectangle(this.width /2, this.height - 25, this.width, 50, { isStatic: true ,
         render: {
           fillStyle: 'green',
           strokeStyle: 'green',
           lineWidth: 3
-        } }));
+      } }));
+      this.terrain.push(this.Bodies.rectangle(this.width /2, this.height/2, 200, 50, { isStatic: true ,
+        render: {
+          fillStyle: 'green',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+      this.terrain.push(this.Bodies.rectangle(this.width /2 , this.height/2, 50, 200, { isStatic: true ,
+        render: {
+          fillStyle: 'green',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+      this.terrain.push(this.Bodies.rectangle(25, this.height /2, 50, this.height, { isStatic: true ,
+        render: {
+          fillStyle: 'green',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+      this.terrain.push(this.Bodies.rectangle(this.width - 25 , this.height / 2, 50, this.height, { isStatic: true ,
+        render: {
+          fillStyle: 'green',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
     }
 
     getTerrain() {
