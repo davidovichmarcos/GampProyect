@@ -8,7 +8,7 @@ let pause = true;
 let makingMode = false;
 let lastPress = null;
 let pressingKeys =[];
-let touch  = { value : false, position : {x : 0,y : 0}};
+let mouse  = { click : false, position : {x : 0,y : 0}};
 var Engine = Matter.Engine,
             Render = Matter.Render,
             Runner = Matter.Runner,
@@ -45,16 +45,19 @@ export default class WorldGame {
     this.player = null;
     this.cam = null;
     this.terrain = null;
+    this.world = null;
+
     this.loadListeners();
     this.loadObjects();
     this.init();
   }
+
   loadObjects() {
     // Create Objects
      this.player = new Player(Bodies.rectangle(400, 300, 25, 25), Matter);
      this.enemy = new Enemy(Bodies.rectangle(500, 300, 35, 35), Matter);
+     this.enemy2 = new Enemy(Bodies.rectangle(1200, 300, 35, 35), Matter);
      this.terrain = new TerrainGenerator(this.WIDHT, this.HEIGHT, Matter);
-     console.log(this.player)
   }
 
   loadListeners() {
@@ -76,8 +79,8 @@ export default class WorldGame {
     }, false);
 
     document.addEventListener('touchdown',(evt) => {
-      touch.value = true;
-      touch.position = { x : evt.clientX, y : evt.clientY };
+      mouse.click = true;
+      mouse.position = { x : evt.clientX, y : evt.clientY };
 
       if(evt.clientX > this.WIDHT) {
         pressingKeys[keys.KEY_LEFT] = true;
@@ -87,7 +90,7 @@ export default class WorldGame {
     }, false);
 
     document.addEventListener('touchup',(evt) => {
-      touch.value = false;
+      mouse.click = false;
       if(evt.clientX > this.WIDHT) {
         pressingKeys[keys.KEY_LEFT] = false;
       } else{
@@ -96,27 +99,26 @@ export default class WorldGame {
     }, false);
 
     document.addEventListener('mousedown',(evt) => {
-      touch.value = true;
+      mouse.click = true;
     }, false);
 
     document.addEventListener('mouseup',(evt) => {
-      touch.value = false;
+      mouse.click = false;
     }, false);
 
     document.addEventListener('mousemove',(evt) => {
-      touch.position = { x : evt.clientX, y : evt.clientY };
+      mouse.position = { x : evt.clientX, y : evt.clientY };
     }, false);
   }
 
-
   init() {
     // create engine
-    var engine = Engine.create(),
-        world = engine.world;
+    let engine = Engine.create();
+    this.world =  engine.world;
 
     let self = this;
     // create renderer
-    var render = Render.create({
+    let render = Render.create({
         canvas: self.canvas,
         engine: engine,
         options: {
@@ -129,7 +131,7 @@ export default class WorldGame {
 
     Render.run(render);
     // create runner
-    var runner = Runner.create();
+    let runner = Runner.create();
     Runner.run(runner, engine);
 
     let timing = () => {
@@ -140,10 +142,15 @@ export default class WorldGame {
     }
 
     // add bodies
-    World.add(world, this.player.getBody());
-    World.add(world, this.enemy.getBody());
-    World.add(world, this.terrain.getTerrain());
-    this.terrain.initMakingMode(world);
+    World.add(this.world, this.player.getBody());
+    World.add(this.world, this.enemy.getBody());
+    World.add(this.world, this.enemy2.getBody());
+    World.add(this.world, this.terrain.getTerrain());
+    //passes world to entities
+    this.terrain.initMakingMode(this.world);
+    this.player.setWorldGame(this);
+    this.enemy.setWorldGame(this);
+    this.enemy2.setWorldGame(this);
 
     Events.on(engine, 'beforeUpdate', event => {
       if(!makingMode) {
@@ -151,8 +158,9 @@ export default class WorldGame {
         // Camera Following the Player.
         //Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
 
-        this.player.update(this.delta, world);
-        this.enemy.update(this.delta, this.player, world);
+        this.player.update(this.delta);
+        this.enemy.update(this.delta);
+        this.enemy2.update(this.delta);
 
         //Player Movement
         if(pressingKeys[keys.KEY_UP]){
@@ -165,20 +173,19 @@ export default class WorldGame {
           //Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
         }
 
-        if(touch.value) {
-          this.player.shoot(world, touch.position);
+        if(mouse.click) {
+          this.player.shoot(mouse.position);
         }
 
         timing();
 
       } else{
         this.makeText("MAKING MODE");
-        this.terrain.drawShadowPlatform(touch.position);
-        if(touch.value) {
+        this.terrain.drawShadowPlatform(mouse.position);
+        if(mouse.click) {
           //If click is on gets the last platform and create a new one to be move after
           this.terrain.persistChanges();
         }
-
       }
 
     });
@@ -190,29 +197,6 @@ export default class WorldGame {
     Events.on(engine,'collisionEnd',event => {
       this.handleEndCollision(event);
     });
-
-    // add mouse control
-  /*  var mouse = Mouse.create(render.canvas),
-        mouseConstraint = MouseConstraint.create(engine, {
-            mouse: mouse,
-            constraint: {
-                stiffness: 0.2,
-                render: {
-                    visible: false
-                }
-            }
-        });
-
-    World.add(world, mouseConstraint);
-
-    // keep the mouse in sync with rendering
-    render.mouse = mouse;
-
-    // fit the render viewport to the scene
-    Render.lookAt(render, {
-        min: { x: 0, y: 0 },
-        max: { x: 800, y: 600 }
-    });*/
 
   }
 
@@ -241,6 +225,8 @@ export default class WorldGame {
         this.player.onFloor = true;
       } else if((pair.bodyA.label === 'Portal' || pair.bodyB.label === 'Portal')){
         //console.log("ea");
+      } else if((pair.bodyA.label === 'Enemy' || pair.bodyB.label === 'Enemy')){
+        this.enemy.onFloor = true;
       }
     //  Matter.Events.trigger(player.body, 'collision', { pair : pair });
     }
@@ -256,6 +242,8 @@ export default class WorldGame {
         this.player.onFloor = false;
       } else if((pair.bodyA.label === 'Portal' || pair.bodyB.label === 'Portal')){
 
+      } else if((pair.bodyA.label === 'Enemy' || pair.bodyB.label === 'Enemy')){
+        this.enemy.onFloor = false;
       }
     //  Matter.Events.trigger(player.body, 'collision', { pair : pair });
     }

@@ -1,7 +1,9 @@
 export default class Player {
 
-     constructor(body, Matter) {
+     constructor(body, Matter, worldGame) {
       this.World = Matter.World;
+      this.worldGame = null;
+      this.world = null;
       this.Bodies = Matter.Bodies;
       this.body = body;
       this.body.label = 'Player';
@@ -24,6 +26,16 @@ export default class Player {
       this.force = 0;
     }
 
+    update(delta, world) {
+      this.delta = delta;
+      this.bulletCycle();
+    }
+
+    setWorldGame(worldGame) {
+      this.worldGame = worldGame;
+      this.world = worldGame.world;
+    }
+
     setPosition(body) {
       this.position.x = body.position.x;
       this.position.y = body.position.y;
@@ -31,11 +43,6 @@ export default class Player {
 
     getPosition() {
       return this.position;
-    }
-    
-    update(delta, world) {
-      this.delta = delta;
-      this.bulletCycle(world);
     }
 
     getBody() {
@@ -56,7 +63,7 @@ export default class Player {
       if(this.onFloor == true) this.body.force.x = this.Fx / this.delta;
     }
 
-    shoot(world, position) {
+    shoot(position) {
       //calculates tangente by x,y
       this.angle = Math.atan2(position.y - this.position.y, position.x - this.position.x);
       const len = this.bullets.length;
@@ -87,10 +94,10 @@ export default class Player {
       this.bullets[len].label = 'Portal';
       this.bullets[len].birthTime = Date.now() + 5000;
 
-      this.World.add(world, this.bullets[len]); //add bullet to world
+      this.World.add(this.world, this.bullets[len]); //add bullet to world
     }
 
-    bulletCycle(world) {
+    bulletCycle() {
       //all bullet loop
       let i = this.bullets.length;
       let currentTime = Date.now();
@@ -98,7 +105,7 @@ export default class Player {
         //soon after spawn bullets can collide with player
         //this may need to be removed
         if(currentTime > this.bullets[i].birthTime) {
-          this.World.remove(world, this.bullets[i]);
+          this.World.remove(this.world, this.bullets[i]);
           this.bullets.splice(i, 1);
         }
       }

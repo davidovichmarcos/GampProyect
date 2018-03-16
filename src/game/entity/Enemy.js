@@ -1,7 +1,11 @@
+const STATE = { looking : "looking", shooting : "shooting"};
+
 export default class Enemy {
 
      constructor(body, Matter) {
       this.World = Matter.World;
+      this.worldGame = null;
+      this.world = null;
       this.Bodies = Matter.Bodies;
       this.body = body;
       this.body.label = 'Enemy';
@@ -16,12 +20,36 @@ export default class Enemy {
       this.sight = null; //sight means mira
       this.angle = 0;
       this.bullets = new Array();
+      this.state = STATE.looking; //set looking for default
+
+      //movements logic
+      this.lastMove = 0;
+      this.currentMove = 0;
 
       //body properties
       this.mass = this.body.mass;
-      this.Fx = 0.004 * this.mass; //run Force on ground
+      this.Fx = 0.009 * this.mass; //run Force on ground
       this.Fy = 0.04 * this.mass; //jump
       this.force = 0;
+    }
+
+    update(delta) {
+      this.delta = delta;
+
+      this.detectEnemy(this.worldGame.getPlayer());
+
+      if(this.state === STATE.looking) {
+        this.walkAround();
+      } else if(this.state === STATE.shooting) {
+        this.shoot(this.worldGame.getPlayer().getPosition());
+      }
+
+      this.bulletCycle();
+    }
+
+    setWorldGame(worldGame) {
+      this.worldGame = worldGame;
+      this.world = worldGame.world;
     }
 
     setPosition(body) {
@@ -31,12 +59,6 @@ export default class Enemy {
 
     getPosition() {
       return this.position;
-    }
-
-    update(delta, player, world) {
-      this.delta = delta;
-      this.calculateDistanceFromPlayer(player, world);
-      this.bulletCycle(world);
     }
 
     getBody() {
@@ -50,15 +72,14 @@ export default class Enemy {
     }
 
     moveLeft() {
-      if(this.onFloor == true) this.body.force.x = -this.Fx / this.delta;
+      if(this.onFloor) this.body.force.x = -this.Fx / this.delta;
     }
 
     moveRight() {
-      if(this.onFloor == true) this.body.force.x = this.Fx / this.delta;
+      this.body.force.x = this.Fx / this.delta;
     }
 
-    shoot(world, position) {
-      console.log("ASD");
+    shoot(position) {
       //calculates tangente by x,y
       this.angle = Math.atan2(position.y - this.position.y, position.x - this.position.x);
       const len = this.bullets.length;
@@ -89,28 +110,51 @@ export default class Enemy {
       this.bullets[len].label = 'Portal';
       this.bullets[len].birthTime = Date.now() + 5000;
 
-      this.World.add(world, this.bullets[len]); //add bullet to world
+      this.World.add(this.world, this.bullets[len]); //add bullet to world
     }
 
-    bulletCycle(world) {
+    bulletCycle() {
       //all bullet loop
       let i = this.bullets.length;
       let currentTime = Date.now();
       while (i--) {
-        //soon after spawn bullets can collide with player
-        //this may need to be removed
+        //if the bullet overcome its time to die it'll die
         if(currentTime > this.bullets[i].birthTime) {
-          this.World.remove(world, this.bullets[i]);
+          this.World.remove(this.world, this.bullets[i]);
           this.bullets.splice(i, 1);
         }
       }
     }
 
-    calculateDistanceFromPlayer(player, world) {
-      let posX = this.position.x - player.getPosition().x;
-      let posY = this.position.y - player.getPosition().y;
+    calculateDistance(target) {
+      let posX = this.position.x - target.getPosition().x;
+      let posY = this.position.y - target.getPosition().y;
       let distance = Math.sqrt((posX * posX) + (posY * posY));
-      if(distance <= 200) return this.shoot(world, player.getPosition());
+      let isClose = false;
+
+      if(distance <= 200) {
+        isClose = true;
+      } else {
+        isClose = false;
+      }
+      return isClose;
+    }
+
+    detectEnemy(target) {
+      let isDetecting = this.calculateDistance(target);
+      if(isDetecting) {
+        this.state = STATE.shooting;
+      } else{
+        this.state = STATE.looking;
+      }
+    }
+
+    walkAround() {
+      if(this.lastMove < this.currentMove) {
+          this.moveLeft();
+          this.lastMove = this.currentMove + 1000;
+      }
+      this.currentMove = Date.now();
     }
 
 }
