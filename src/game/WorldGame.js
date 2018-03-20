@@ -59,7 +59,7 @@ export default class WorldGame {
   loadObjects() {
     // Create Objects
      this.player = new Player(Bodies.rectangle(400, 300, 25, 25), Matter);
-     this.enemy = new Enemy(Bodies.rectangle(500, 300, 35, 35), Matter);
+     this.enemy = new Enemy(Bodies.rectangle(750, 300, 35, 35), Matter);
      this.enemy2 = new Enemy(Bodies.rectangle(1200, 300, 35, 35), Matter);
      this.terrain = new TerrainGenerator(this.WIDHT, this.HEIGHT, Matter);
   }
@@ -253,9 +253,10 @@ export default class WorldGame {
       } else if((pair.bodyA.label === 'Portal' || pair.bodyB.label === 'Portal')){
         //console.log("ea");
       } else if((pair.bodyA.label === 'Enemy' || pair.bodyB.label === 'Enemy')){
+        this.enemy.collision(pair);
         this.enemy.onFloor = true;
       }
-    //  Matter.Events.trigger(player.body, 'collision', { pair : pair });
+      //Matter.Events.trigger(this.player.body, 'collision', { pair : pair });
     }
   }
 

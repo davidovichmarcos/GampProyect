@@ -13,18 +13,20 @@ export default class Enemy {
       this.onFloor = false;
       this.delta = 0;
       this.movement = 4;
-      this.currentJumpTime = null;
-      this.lastJumpTime = null
       this.height = (body.height == null) ? body.width :body.height;
       this.width = ( body.width == null) ? 0 : body.width;
-      this.sight = null; //sight means mira
-      this.angle = 0;
-      this.bullets = new Array();
       this.state = STATE.looking; //set looking for default
 
-      //movements logic
-      this.lastMove = 0;
-      this.currentMove = 0;
+      //Shoot logic
+      this.minDistanceShoot = 200;
+      this.angle = 0;
+      this.bullets = new Array();
+
+      //Walk logic
+      this.alreadyCalled = false;
+      this.walkInterval = null;
+      this.targetPosition = this.position.x;
+      this.walkDirecction = null;
 
       //body properties
       this.mass = this.body.mass;
@@ -36,15 +38,21 @@ export default class Enemy {
     update(delta) {
       this.delta = delta;
       //this method determines the enemy state by proximity to the target or targets to reach
-      this.detectEnemy(this.worldGame.getPlayer());
+      this.state = this.detectEnemy(this.worldGame.getPlayer());
 
       if(this.state === STATE.looking) {
         this.walkAround();
       } else if(this.state === STATE.shooting) {
-        this.shoot(this.worldGame.getPlayer().getPosition());
+        this.shoot(this.worldGame.getPlayer());
       }
 
       this.bulletCycle();
+    }
+
+    collision(pair) {
+      if(pair.bodyA.label === "Vertical-platform" || pair.bodyB.label === "Vertical-platform") {
+        this.walkToOpositeSide();
+      }
     }
 
     setWorldGame(worldGame) {
@@ -79,9 +87,9 @@ export default class Enemy {
       if(this.onFloor) this.body.force.x = this.Fx / this.delta;
     }
 
-    shoot(position) {
+    shoot(target) {
       //calculates tangente by x,y
-      this.angle = Math.atan2(position.y - this.position.y, position.x - this.position.x);
+      this.angle = Math.atan2(target.getPosition().y - this.position.y, target.getPosition().x - this.position.x);
       const len = this.bullets.length;
       //bullet[len] = Bodies.polygon(e.x - mech.transX, e.y- mech.transY, 5, 5);
       const dist = 15 //radial distance mech head
@@ -132,7 +140,7 @@ export default class Enemy {
       let distance = Math.sqrt((posX * posX) + (posY * posY));
       let isClose = false;
 
-      if(distance <= 200) {
+      if(distance <= this.minDistanceShoot) {
         isClose = true;
       } else {
         isClose = false;
@@ -142,27 +150,57 @@ export default class Enemy {
 
     detectEnemy(target) {
       let isDetecting = this.calculateDistance(target);
+      let state = null;
+
       if(isDetecting) {
-        this.state = STATE.shooting;
+        state = STATE.shooting;
       } else{
-        this.state = STATE.looking;
+        state = STATE.looking;
       }
+      return state;
     }
 
     walkAround() {
-      let random = 0;
-      if(this.lastMove < this.currentMove) {
-        this.lastMove = this.currentMove + 1000;
-        random = this.random(5);
+      //If the player reaches its final position generate a new one to reach and again
+      if(this.position.x == this.targetPosition) {
+        clearInterval(this.walkInterval);
+        this.targetPosition = this.determinateNewPosition();
+        this.alreadyCalled = false //this flags allows only call once, cause setInterval handles the movement
+      } else if(!this.alreadyCalled) {
+        if(this.targetPosition > this.position.x) {
+          //right
+          console.log("right");
+          this.walkDirecction = "rigth";
+          this.walkInterval = setInterval(() => this.moveRight(), 350);
+        } else{
+          //left
+          console.log("left");
+          this.walkDirecction = "left";
+          this.walkInterval = setInterval(() => this.moveLeft(), 350);
+        }
 
+        this.alreadyCalled = true;
       }
-      console.log(random);
-      if(random >= 3) {
-        this.moveLeft();
+    }
+
+    walkToOpositeSide() {
+      this.alreadyCalled = false;
+      if(this.walkDirecction === "left") {
+        this.targetPosition = this.position.x + 200;
       } else{
-        this.moveRight();
+        this.targetPosition = this.position.x - 200;
       }
-      this.currentMove = Date.now();
+    }
+
+    determinateNewPosition() {
+      let position = 0;
+      if(this.random(5) >= 3) {
+        position = this.position.x + 200;
+      } else {
+        position = this.position.x - 200;
+      }
+
+      return position;
     }
 
     random(max) {
