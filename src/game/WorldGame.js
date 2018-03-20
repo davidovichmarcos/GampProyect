@@ -3,25 +3,26 @@ import Player from './entity/Player';
 import Enemy from './entity/Enemy';
 import TerrainGenerator from './entity/TerrainGenerator';
 
-const SCALE = 100;
-let pause = true;
+let pause = false;
 let makingMode = false;
 let lastPress = null;
 let pressingKeys =[];
 let mouse  = { click : false, position : {x : 0,y : 0}};
-var Engine = Matter.Engine,
-            Render = Matter.Render,
-            Runner = Matter.Runner,
-            MouseConstraint = Matter.MouseConstraint,
-            Mouse = Matter.Mouse,
-            World = Matter.World,
-            Body = Matter.Body,
-            Bounds = Matter.Bounds,
-            Events = Matter.Events,
-            Bodies = Matter.Bodies,
-            Vertices = Matter.Vertices,
-            Vector = Matter.Vector;
-
+//matter namespaces
+let Engine = Matter.Engine,
+    Render = Matter.Render,
+    Runner = Matter.Runner,
+    MouseConstraint = Matter.MouseConstraint,
+    Mouse = Matter.Mouse,
+    World = Matter.World,
+    Body = Matter.Body,
+    Bounds = Matter.Bounds,
+    Events = Matter.Events,
+    Bodies = Matter.Bodies,
+    Vertices = Matter.Vertices,
+    Vector = Matter.Vector;
+let izq = false;
+const SCALE = 100;
 const keys = {
   KEY_ENTER : 13,
   KEY_LEFT : 37,
@@ -29,14 +30,14 @@ const keys = {
   KEY_RIGHT : 39,
   KEY_DOWN : 40,
   KEY_SPACE : 32,
+  P : 80, // pause key offcourse
   M : 77 //making mode
 };
-
-let izq = false;
 
 export default class WorldGame {
 
   constructor(surface) {
+    //basic usefull vars to handle the game logic
     this.canvas = surface;
     this.canvas.width = window.innerWidth-4;
     this.canvas.height = window.innerHeight-4;
@@ -45,8 +46,11 @@ export default class WorldGame {
     this.player = null;
     this.cam = null;
     this.terrain = null;
+    //matter stuffs
     this.world = null;
+    this.engine = null;
 
+    //calling basic callback-handler and init the game setting
     this.loadListeners();
     this.loadObjects();
     this.init();
@@ -65,6 +69,7 @@ export default class WorldGame {
       //console.log(evt.keyCode);
       lastPress = evt.keyCode;
       pressingKeys[evt.keyCode] = true;
+
       if(pressingKeys[keys.M]){
         if(makingMode) {
           makingMode = false;
@@ -72,6 +77,15 @@ export default class WorldGame {
           makingMode = true;
         }
       }
+
+      if(pressingKeys[keys.P]){
+        if(pause) {
+          pause = false;
+        } else{
+          pause = true;
+        }
+      }
+
     }, false);
 
     document.addEventListener('keyup',(evt) => {
@@ -113,14 +127,14 @@ export default class WorldGame {
 
   init() {
     // create engine
-    let engine = Engine.create();
-    this.world =  engine.world;
+    this.engine = Engine.create();
+    this.world =  this.engine.world;
 
-    let self = this;
+    //let self = this;
     // create renderer
-    let render = Render.create({
-        canvas: self.canvas,
-        engine: engine,
+    this.render = Render.create({
+        canvas: this.canvas,
+        engine: this.engine,
         options: {
             width: this.WIDHT,
             height: this.HEIGHT,
@@ -129,17 +143,10 @@ export default class WorldGame {
         }
     });
 
-    Render.run(render);
+    Render.run(this.render);
     // create runner
     let runner = Runner.create();
-    Runner.run(runner, engine);
-
-    let timing = () => {
-      this.cycle++; //tracks game cycles
-      //delta is used to adjust forces on game slow down;
-      this.delta = (engine.timing.timestamp - this.lastTimeStamp) / 16.666666666666;
-      this.lastTimeStamp = engine.timing.timestamp; //track last engine timestamp
-    }
+    Runner.run(runner, this.engine);
 
     // add bodies
     World.add(this.world, this.player.getBody());
@@ -152,53 +159,73 @@ export default class WorldGame {
     this.enemy.setWorldGame(this);
     this.enemy2.setWorldGame(this);
 
-    Events.on(engine, 'beforeUpdate', event => {
-      if(!makingMode) {
-        this.terrain.validateRemaining();
-        // Camera Following the Player.
-        //Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
-
-        this.player.update(this.delta);
-        this.enemy.update(this.delta);
-        this.enemy2.update(this.delta);
-
-        //Player Movement
-        if(pressingKeys[keys.KEY_UP]){
-          this.player.jump();
-        } else if(pressingKeys[keys.KEY_RIGHT]){
-          this.player.moveRight();
-          //Body.setVelocity(this.player.getBody(), );
-        } else if(pressingKeys[keys.KEY_LEFT]){
-          this.player.moveLeft();
-          //Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
-        }
-
-        if(mouse.click) {
-          this.player.shoot(mouse.position);
-        }
-
-        timing();
-
+    Events.on(this.engine, 'beforeUpdate', event => {
+      //setting pause
+      if(!pause) {
+        this.gameLoop();
       } else{
-        this.makeText("MAKING MODE");
-        this.terrain.drawShadowPlatform(mouse.position);
-        if(mouse.click) {
-          //If click is on gets the last platform and create a new one to be move after
-          this.terrain.persistChanges();
-        }
+        //supouse the author declaration, this method "stop recquest animation frame"
+        Runner.stop(this.engine);
+        this.makeText("PAUSE");
       }
 
     });
 
-    Events.on(engine,'collisionActive',event => {
+    Events.on(this.engine,'collisionActive',event => {
       this.handleActiveCollision(event);
     });
 
-    Events.on(engine,'collisionEnd',event => {
+    Events.on(this.engine,'collisionEnd',event => {
       this.handleEndCollision(event);
     });
 
   }
+
+  gameLoop() {
+    if(!makingMode) {
+      this.terrain.validateRemaining();
+      // Camera Following the Player.
+      //Bounds.translate(render.bounds, {x:this.player.getBody().velocity.x,y:this.player.getBody().velocity.y});
+
+      this.player.update(this.delta);
+      this.enemy.update(this.delta);
+      this.enemy2.update(this.delta);
+
+      //Player Movement
+      if(pressingKeys[keys.KEY_UP]){
+        this.player.jump();
+      } else if(pressingKeys[keys.KEY_RIGHT]){
+        this.player.moveRight();
+        //Body.setVelocity(this.player.getBody(), );
+      } else if(pressingKeys[keys.KEY_LEFT]){
+        this.player.moveLeft();
+        //Body.setVelocity(this.player.getBody(), { x: -movement*1.5, y: 0 });
+      }
+
+      if(mouse.click) {
+        this.player.shoot(mouse.position);
+      }
+
+      this.deltaGeter();
+
+    } else{
+      this.makeText("MAKING MODE");
+      this.terrain.drawShadowPlatform(mouse.position);
+      if(mouse.click) {
+        //If click is on gets the last platform and create a new one to be move after
+        this.terrain.persistChanges();
+      }
+    }
+  }
+
+  deltaGeter() {
+    // this method calculete the delta time  of the game
+    this.cycle++; //tracks game cycles - I don't know for what it is useful but ...
+    //delta is used to adjust forces on game slow down;
+    this.delta = (this.engine.timing.timestamp - this.lastTimeStamp) / 16.666666666666;
+    this.lastTimeStamp = this.engine.timing.timestamp; //track last engine timestamp
+  }
+
 
   getPlayer() {
     return this.player;

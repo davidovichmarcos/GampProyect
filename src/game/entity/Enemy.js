@@ -29,13 +29,13 @@ export default class Enemy {
       //body properties
       this.mass = this.body.mass;
       this.Fx = 0.009 * this.mass; //run Force on ground
-      this.Fy = 0.04 * this.mass; //jump
+      this.Fy = 0.009 * this.mass; //jump
       this.force = 0;
     }
 
     update(delta) {
       this.delta = delta;
-
+      //this method determines the enemy state by proximity to the target or targets to reach
       this.detectEnemy(this.worldGame.getPlayer());
 
       if(this.state === STATE.looking) {
@@ -76,7 +76,7 @@ export default class Enemy {
     }
 
     moveRight() {
-      this.body.force.x = this.Fx / this.delta;
+      if(this.onFloor) this.body.force.x = this.Fx / this.delta;
     }
 
     shoot(position) {
@@ -114,7 +114,7 @@ export default class Enemy {
     }
 
     bulletCycle() {
-      //all bullet loop
+      //validates when a bullet needs to die
       let i = this.bullets.length;
       let currentTime = Date.now();
       while (i--) {
@@ -150,11 +150,24 @@ export default class Enemy {
     }
 
     walkAround() {
+      let random = 0;
       if(this.lastMove < this.currentMove) {
-          this.moveLeft();
-          this.lastMove = this.currentMove + 1000;
+        this.lastMove = this.currentMove + 1000;
+        random = this.random(5);
+
+      }
+      console.log(random);
+      if(random >= 3) {
+        this.moveLeft();
+      } else{
+        this.moveRight();
       }
       this.currentMove = Date.now();
     }
+
+    random(max) {
+     return Math.floor(Math.random() * max);
+    }
+
 
 }
