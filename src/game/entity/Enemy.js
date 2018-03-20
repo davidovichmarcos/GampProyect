@@ -1,12 +1,14 @@
-export default class Player {
+const STATE = { looking : "looking", shooting : "shooting"};
 
-     constructor(body, Matter, worldGame) {
+export default class Enemy {
+
+     constructor(body, Matter) {
       this.World = Matter.World;
       this.worldGame = null;
       this.world = null;
       this.Bodies = Matter.Bodies;
       this.body = body;
-      this.body.label = 'Player';
+      this.body.label = 'Enemy';
       this.position = body.position;
       this.onFloor = false;
       this.delta = 0;
@@ -18,16 +20,30 @@ export default class Player {
       this.sight = null; //sight means mira
       this.angle = 0;
       this.bullets = new Array();
+      this.state = STATE.looking; //set looking for default
+
+      //movements logic
+      this.lastMove = 0;
+      this.currentMove = 0;
 
       //body properties
       this.mass = this.body.mass;
-      this.Fx = 0.004 * this.mass; //run Force on ground
-      this.Fy = 0.04 * this.mass; //jump
+      this.Fx = 0.009 * this.mass; //run Force on ground
+      this.Fy = 0.009 * this.mass; //jump
       this.force = 0;
     }
 
-    update(delta, world) {
+    update(delta) {
       this.delta = delta;
+      //this method determines the enemy state by proximity to the target or targets to reach
+      this.detectEnemy(this.worldGame.getPlayer());
+
+      if(this.state === STATE.looking) {
+        this.walkAround();
+      } else if(this.state === STATE.shooting) {
+        this.shoot(this.worldGame.getPlayer().getPosition());
+      }
+
       this.bulletCycle();
     }
 
@@ -37,8 +53,8 @@ export default class Player {
     }
 
     setPosition(body) {
-      this.position.x = body.position.x;
-      this.position.y = body.position.y;
+      this.x = body.position.x;
+      this.y = body.position.y;
     }
 
     getPosition() {
@@ -56,11 +72,11 @@ export default class Player {
     }
 
     moveLeft() {
-      if(this.onFloor == true) this.body.force.x = -this.Fx / this.delta;
+      if(this.onFloor) this.body.force.x = -this.Fx / this.delta;
     }
 
     moveRight() {
-      if(this.onFloor == true) this.body.force.x = this.Fx / this.delta;
+      if(this.onFloor) this.body.force.x = this.Fx / this.delta;
     }
 
     shoot(position) {
@@ -98,12 +114,11 @@ export default class Player {
     }
 
     bulletCycle() {
-      //all bullet loop
+      //validates when a bullet needs to die
       let i = this.bullets.length;
       let currentTime = Date.now();
       while (i--) {
-        //soon after spawn bullets can collide with player
-        //this may need to be removed
+        //if the bullet overcome its time to die it'll die
         if(currentTime > this.bullets[i].birthTime) {
           this.World.remove(this.world, this.bullets[i]);
           this.bullets.splice(i, 1);
@@ -111,6 +126,48 @@ export default class Player {
       }
     }
 
+    calculateDistance(target) {
+      let posX = this.position.x - target.getPosition().x;
+      let posY = this.position.y - target.getPosition().y;
+      let distance = Math.sqrt((posX * posX) + (posY * posY));
+      let isClose = false;
+
+      if(distance <= 200) {
+        isClose = true;
+      } else {
+        isClose = false;
+      }
+      return isClose;
+    }
+
+    detectEnemy(target) {
+      let isDetecting = this.calculateDistance(target);
+      if(isDetecting) {
+        this.state = STATE.shooting;
+      } else{
+        this.state = STATE.looking;
+      }
+    }
+
+    walkAround() {
+      let random = 0;
+      if(this.lastMove < this.currentMove) {
+        this.lastMove = this.currentMove + 1000;
+        random = this.random(5);
+
+      }
+      console.log(random);
+      if(random >= 3) {
+        this.moveLeft();
+      } else{
+        this.moveRight();
+      }
+      this.currentMove = Date.now();
+    }
+
+    random(max) {
+     return Math.floor(Math.random() * max);
+    }
 
 
 }
