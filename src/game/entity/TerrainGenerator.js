@@ -40,7 +40,7 @@ export default class TerrainGenerator {
 
     validateRemaining() {
       let lastBody = this.terrain[this.terrain.length - 1];
-      if(lastBody.shadowMode == true) this.World.remove(this.world, lastBody);
+      if(lastBody.shadowMode === true) this.World.remove(this.world, lastBody);
     }
 
     createPlatform() {
@@ -115,18 +115,8 @@ export default class TerrainGenerator {
     createDefaultTerrain() {
       //*Aclaration* the x position of rectangle is that cause the physics engine set all objects in base to its center of mass
       // x = center of mass = middle of rectangle
-      this.terrain.push(this.Bodies.rectangle(this.width /2, 25, this.width, 50, { isStatic: true ,
-        render: {
-          fillStyle: 'green',
-          strokeStyle: 'green',
-          lineWidth: 3
-      } }));
-      this.terrain.push(this.Bodies.rectangle(this.width /2, this.height - 25, this.width, 50, { isStatic: true ,
-        render: {
-          fillStyle: 'green',
-          strokeStyle: 'green',
-          lineWidth: 3
-      } }));
+
+      // + shape
       this.terrain.push(this.Bodies.rectangle(this.width /2, this.height/2, 200, 50, { isStatic: true ,
         render: {
           fillStyle: 'green',
@@ -139,13 +129,26 @@ export default class TerrainGenerator {
           strokeStyle: 'green',
           lineWidth: 3
       } }));
-      this.terrain.push(this.Bodies.rectangle(25, this.height /2, 50, this.height, { isStatic: true ,
+
+      this.terrain.push(this.Bodies.rectangle(this.width /2, 25, this.width, 50, { isStatic: true ,
         render: {
           fillStyle: 'green',
           strokeStyle: 'green',
           lineWidth: 3
       } }));
-      this.terrain.push(this.Bodies.rectangle(this.width - 25 , this.height / 2, 50, this.height, { isStatic: true ,
+      this.terrain.push(this.Bodies.rectangle(this.width /2, this.height - 25, this.width, 50, { isStatic: true ,
+        render: {
+          fillStyle: 'green',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+      this.terrain.push(this.Bodies.rectangle(25, this.height /2, 50, this.height, { isStatic: true , label : "Vertical-platform",
+        render: {
+          fillStyle: 'green',
+          strokeStyle: 'green',
+          lineWidth: 3
+      } }));
+      this.terrain.push(this.Bodies.rectangle(this.width - 25 , this.height / 2, 50, this.height, { isStatic: true , label : "Vertical-platform",
         render: {
           fillStyle: 'green',
           strokeStyle: 'green',

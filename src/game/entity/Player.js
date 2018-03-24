@@ -31,6 +31,10 @@ export default class Player {
       this.bulletCycle();
     }
 
+    collision() {
+      console.log("ASD");
+    }
+
     setWorldGame(worldGame) {
       this.worldGame = worldGame;
       this.world = worldGame.world;
